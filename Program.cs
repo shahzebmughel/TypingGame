@@ -1,4 +1,7 @@
 ﻿using System.Diagnostics;
+using System.IO; 
+using System.Collections.Generic;
+using System.Linq;
 
 namespace TypingGame
 {
@@ -6,39 +9,61 @@ namespace TypingGame
     {
         static void Main(string[] args)
         {
-           // The Text the User has to Write down as fast as possible
-            string testSentence = "The Programmer is getting ready to do his Job!";
+            string filePath = "sentences.txt";
+
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine("Error: sentences.txt not found!");
+                return;
+            }
+
+            // Load sentences and filter out empty lines
+            string[] lines = File.ReadAllLines(filePath).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
+            int totalAvailable = lines.Length;
 
             Console.WriteLine($"---------  Typing Game ------------");
-            Console.WriteLine("Type the following sentence as fast as you can");
-            Console.WriteLine($"\n {testSentence}\n");
+            Console.WriteLine($"There are {totalAvailable} sentences available.");
 
-            //Wait for the user to start typing
-            Console.WriteLine("Press any key to start the Typing Game...");
-            Console.ReadKey();
-
-            //Clear the screen, show the sentence, prompt user
+            // Ask user for number of rounds
+            int rounds = 0;
+            while (rounds < 1 || rounds > totalAvailable)
+            {
+                Console.Write($"How many sentences would you like to type (1-{totalAvailable})? ");
+                string input = Console.ReadLine() ?? "";
+                int.TryParse(input, out rounds);
+            }
             Console.Clear();
-            Console.WriteLine($"{testSentence}\n");
-            Console.Write("Start typing here: ");
 
-            //Start a timer and capture the user's input
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+            // Shuffle the sentences so they aren't in the same order
+            Random rand = new Random();
+            var selectedSentences = lines.OrderBy(x => rand.Next()).Take(rounds).ToList();
+            double totalTimePassed = 0;
+            int totalErrorCount = 0;
 
-            string userInput = Console.ReadLine() ?? "";
 
-            //Stop the timer when the user finishes typing
-            stopwatch.Stop();
-            TimeSpan timeTaken = stopwatch.Elapsed;
+            // Game Loop
+            for (int i = 0; i < selectedSentences.Count; i++)
+            {
+                string testSentence = selectedSentences[i].Trim();
+                Console.WriteLine($"Round {i + 1} of {rounds}");
+                Console.WriteLine($"Type this: \n\n{testSentence}\n");
+                Console.Write("Start typing here: ");
 
-            //Count mistakes
-            int errorCount = CountErrors(testSentence, userInput);
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                string userInput = Console.ReadLine() ?? "";
+                stopwatch.Stop();
 
-            //Show the time taken and the errors
-            Console.WriteLine("\n--- Results ---");
-            Console.WriteLine($"Time Taken: {timeTaken.TotalSeconds:F2} seconds");
-            Console.WriteLine($"Errors: {errorCount}");
+                int errorCount = CountErrors(testSentence, userInput);
+                totalErrorCount += errorCount;
+                var roundTimePassed = stopwatch.Elapsed.TotalSeconds;
+                totalTimePassed += roundTimePassed;
+                Console.WriteLine($"\nFinished! Time: {roundTimePassed:F2}s, Errors: {errorCount}");
+                Console.WriteLine("Press any key for next round...");
+                Console.ReadKey(true);
+                Console.Clear();
+            }
+
+            Console.WriteLine($"\nAll rounds complete! Good job. Total Time passed of all {rounds} Rounds: {totalTimePassed:F2}s with {totalErrorCount} Errors.");
         }
 
         static int CountErrors(string original, string typed)
