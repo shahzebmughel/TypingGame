@@ -9,6 +9,44 @@ namespace TypingGame
     {
         static void Main(string[] args)
         {
+            var leaderboardManager = new LeaderboardManager();
+            bool playGame = true;
+
+            while (playGame)
+            {
+                Console.Clear();
+                Console.WriteLine("========================================");
+                Console.WriteLine("        TYPING GAME - MAIN MENU        ");
+                Console.WriteLine("========================================");
+                Console.WriteLine("1. Play Game");
+                Console.WriteLine("2. View Leaderboard");
+                Console.WriteLine("3. Exit");
+                Console.WriteLine("========================================");
+                Console.Write("Select an option (1-3): ");
+
+                string? menuChoice = Console.ReadLine();
+
+                switch (menuChoice)
+                {
+                    case "1":
+                        PlayGame(leaderboardManager);
+                        break;
+                    case "2":
+                        leaderboardManager.DisplayLeaderboard();
+                        break;
+                    case "3":
+                        playGame = false;
+                        break;
+                    default:
+                        Console.WriteLine("Invalid option. Press any key to try again...");
+                        Console.ReadKey();
+                        break;
+                }
+            }
+        }
+
+        static void PlayGame(LeaderboardManager leaderboardManager)
+        {
             string filePath = "sentences.txt";
 
             if (!File.Exists(filePath))
@@ -21,6 +59,7 @@ namespace TypingGame
             string[] lines = File.ReadAllLines(filePath).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
             int totalAvailable = lines.Length;
 
+            Console.Clear();
             Console.WriteLine($"---------  Typing Game (Live Feedback) ------------");
             Console.WriteLine($"There are {totalAvailable} sentences available.");
 
@@ -136,7 +175,21 @@ namespace TypingGame
             Console.WriteLine($"Average WPM     : {wpm:F1}");
             Console.WriteLine($"Accuracy        : {accuracy:F1}%");
             Console.WriteLine("===========================================");
-            Console.WriteLine("Press any key to exit...");
+
+            // Save score to leaderboard
+            var scoreEntry = new ScoreEntry
+            {
+                DatePlayed = DateTime.Now,
+                Rounds = rounds,
+                TimeSeconds = totalTimePassed,
+                Mistakes = totalMistakesMade,
+                WPM = wpm,
+                Accuracy = accuracy
+            };
+
+            leaderboardManager.SaveScore(scoreEntry);
+            Console.WriteLine("\n✓ Score saved to leaderboard!");
+            Console.WriteLine("Press any key to return to menu...");
             Console.ReadKey();
         }
     }
