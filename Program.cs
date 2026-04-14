@@ -21,8 +21,9 @@ namespace TypingGame
             string[] lines = File.ReadAllLines(filePath).Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
             int totalAvailable = lines.Length;
 
-            Console.WriteLine($"---------  Typing Game ------------");
+            Console.WriteLine($"---------  Typing Game (Live Feedback) ------------");
             Console.WriteLine($"There are {totalAvailable} sentences available.");
+
 
             // Ask user for number of rounds
             int rounds = 0;
@@ -37,35 +38,86 @@ namespace TypingGame
             // Shuffle the sentences so they aren't in the same order
             Random rand = new Random();
             var selectedSentences = lines.OrderBy(x => rand.Next()).Take(rounds).ToList();
+
             double totalTimePassed = 0;
-            int totalErrorCount = 0;
+            int totalMistakesMade = 0; 
             int totalCharacters = 0;
 
-
-            // Game Loop
+            //Gane Loop
             for (int i = 0; i < selectedSentences.Count; i++)
             {
-                string testSentence = selectedSentences[i].Trim();
-                totalCharacters += testSentence.Length;
+                string target = selectedSentences[i].Trim();
+                totalCharacters += target.Length;
 
                 Console.WriteLine($"Round {i + 1} of {rounds}");
-                Console.WriteLine($"Type this: \n\n{testSentence}\n");
-                Console.Write("Start typing here: ");
+                Console.WriteLine("Type the text below:");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.WriteLine(target);
+                Console.ResetColor();
+                Console.WriteLine("--------------------------------------------------");
 
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                string userInput = Console.ReadLine() ?? "";
-                stopwatch.Stop();
+                // This is where the user starts typing
+                string currentInput = "";
+                int roundMistakes = 0;
+                Stopwatch sw = new Stopwatch();
+                bool started = false;
 
-                int errorCount = CountErrors(testSentence, userInput);
-                totalErrorCount += errorCount;
-                var roundTimePassed = stopwatch.Elapsed.TotalSeconds;
-                totalTimePassed += roundTimePassed;
-                Console.WriteLine($"\nFinished! Time: {roundTimePassed:F2}s, Errors: {errorCount}");
+                while (currentInput.Length < target.Length)
+                {
+                    // Read key without displaying it
+                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+
+                    // Start timer on first key press
+                    if (!started)
+                    {
+                        sw.Start();
+                        started = true;
+                    }
+
+                    // Handle Backspace
+                    if (keyInfo.Key == ConsoleKey.Backspace)
+                    {
+                        if (currentInput.Length > 0)
+                        {
+                            currentInput = currentInput.Substring(0, currentInput.Length - 1);
+                            // Move cursor back, print space, move cursor back again
+                            Console.Write("\b \b");
+                        }
+                        continue;
+                    }
+
+                    // Ignore non-character keys (like Shift, F1, etc.)
+                    if (char.IsControl(keyInfo.KeyChar)) continue;
+
+                    char typedChar = keyInfo.KeyChar;
+                    char expectedChar = target[currentInput.Length];
+
+                    if (typedChar == expectedChar)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Green;
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        roundMistakes++;
+                    }
+
+                    // Display the character and add to input string
+                    Console.Write(typedChar);
+                    currentInput += typedChar;
+                    Console.ResetColor();
+                }
+
+                sw.Stop();
+                totalTimePassed += sw.Elapsed.TotalSeconds;
+                totalMistakesMade += roundMistakes;
+
+                Console.WriteLine("\n\nRound Finished!");
+                Console.WriteLine($"Mistakes this round: {roundMistakes}");
                 Console.WriteLine("Press any key for next round...");
                 Console.ReadKey(true);
                 Console.Clear();
             }
-
 
             // --- CALCULATIONS ---
             // WPM = (Characters / 5) / (Time in Minutes)
@@ -73,34 +125,19 @@ namespace TypingGame
             double wpm = (totalCharacters / 5.0) / totalMinutes;
 
             // Accuracy = % of correct characters
-            double accuracy = Math.Max(0, ((double)(totalCharacters - totalErrorCount) / totalCharacters) * 100);
+            double accuracy = Math.Max(0, ((double)(totalCharacters - totalMistakesMade) / totalCharacters) * 100);
 
             Console.WriteLine("===========================================");
             Console.WriteLine("             GAME COMPLETE!                ");
             Console.WriteLine("===========================================");
             Console.WriteLine($"Total Sentences : {rounds}");
-            Console.WriteLine($"Total Time      : {totalTimePassed:F2} seconds");
-            Console.WriteLine($"Total Errors    : {totalErrorCount}");
-            Console.WriteLine($"Average WPM     : {wpm:F1} WPM");
+            Console.WriteLine($"Total Time      : {totalTimePassed:F2}s");
+            Console.WriteLine($"Total Mistakes  : {totalMistakesMade}");
+            Console.WriteLine($"Average WPM     : {wpm:F1}");
             Console.WriteLine($"Accuracy        : {accuracy:F1}%");
             Console.WriteLine("===========================================");
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
-        }
-
-        static int CountErrors(string original, string typed)
-        {
-            int errors = 0;
-            int minLength = Math.Min(original.Length, typed.Length);
-
-            for (int i = 0; i < minLength; i++)
-            {
-                if (original[i] != typed[i])
-                    errors++;
-            }
-            errors += Math.Abs(original.Length - typed.Length);
-
-            return errors;
         }
     }
 }
