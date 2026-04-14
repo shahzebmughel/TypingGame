@@ -39,12 +39,15 @@ namespace TypingGame
             var selectedSentences = lines.OrderBy(x => rand.Next()).Take(rounds).ToList();
             double totalTimePassed = 0;
             int totalErrorCount = 0;
+            int totalCharacters = 0;
 
 
             // Game Loop
             for (int i = 0; i < selectedSentences.Count; i++)
             {
                 string testSentence = selectedSentences[i].Trim();
+                totalCharacters += testSentence.Length;
+
                 Console.WriteLine($"Round {i + 1} of {rounds}");
                 Console.WriteLine($"Type this: \n\n{testSentence}\n");
                 Console.Write("Start typing here: ");
@@ -63,7 +66,26 @@ namespace TypingGame
                 Console.Clear();
             }
 
-            Console.WriteLine($"\nAll rounds complete! Good job. Total Time passed of all {rounds} Rounds: {totalTimePassed:F2}s with {totalErrorCount} Errors.");
+
+            // --- CALCULATIONS ---
+            // WPM = (Characters / 5) / (Time in Minutes)
+            double totalMinutes = totalTimePassed / 60.0;
+            double wpm = (totalCharacters / 5.0) / totalMinutes;
+
+            // Accuracy = % of correct characters
+            double accuracy = Math.Max(0, ((double)(totalCharacters - totalErrorCount) / totalCharacters) * 100);
+
+            Console.WriteLine("===========================================");
+            Console.WriteLine("             GAME COMPLETE!                ");
+            Console.WriteLine("===========================================");
+            Console.WriteLine($"Total Sentences : {rounds}");
+            Console.WriteLine($"Total Time      : {totalTimePassed:F2} seconds");
+            Console.WriteLine($"Total Errors    : {totalErrorCount}");
+            Console.WriteLine($"Average WPM     : {wpm:F1} WPM");
+            Console.WriteLine($"Accuracy        : {accuracy:F1}%");
+            Console.WriteLine("===========================================");
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadKey();
         }
 
         static int CountErrors(string original, string typed)
